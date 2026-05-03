@@ -392,20 +392,18 @@ function PlannerScreen({ profile }: { profile: Profile }) {
 }
 
 // ── Challenge Screen ─────────────────────────────────────────────────────────
-function ChallengeScreen() {
-  const [challenges, setChallenges] = useState<Challenge[]>([
-    {
-      id: 1,
-      title: "No Gorengan",
-      type: "avoid",
-      target: "Gorengan",
-      duration: 7,
-      checkins: [true, true, false],
-      createdAt: Date.now() - 2 * 86400000,
-    },
-  ]);
+function ChallengeScreen({ sessionId }: { sessionId: string }) {
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: "", type: "avoid" as "avoid" | "streak", target: "", duration: "7" });
+
+  useEffect(() => {
+    if (!sessionId) return;
+    fetch("/api/challenges", { headers: { "x-session-id": sessionId } })
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setChallenges(data); })
+      .catch(() => {});
+  }, [sessionId]);
 
   function getTodayIndex(challenge: Challenge) {
     const daysPassed = Math.floor((Date.now() - challenge.createdAt) / 86400000);
@@ -413,6 +411,7 @@ function ChallengeScreen() {
   }
 
   function toggleCheckin(cid: number, dayIndex: number) {
+    let updatedCheckins: boolean[] | null = null;
     setChallenges((prev) =>
       prev.map((c) => {
         if (c.id !== cid) return c;
@@ -420,13 +419,28 @@ function ChallengeScreen() {
         if (dayIndex > today) return c;
         const next = [...c.checkins];
         next[dayIndex] = !next[dayIndex];
+        updatedCheckins = next;
         return { ...c, checkins: next };
       })
     );
+    if (sessionId && updatedCheckins !== null) {
+      fetch("/api/challenges", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "x-session-id": sessionId },
+        body: JSON.stringify({ id: cid, checkins: updatedCheckins }),
+      }).catch(() => {});
+    }
   }
 
   function deleteChallenge(cid: number) {
     setChallenges((prev) => prev.filter((c) => c.id !== cid));
+    if (sessionId) {
+      fetch("/api/challenges", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", "x-session-id": sessionId },
+        body: JSON.stringify({ id: cid }),
+      }).catch(() => {});
+    }
   }
 
   function addChallenge() {
@@ -445,6 +459,13 @@ function ChallengeScreen() {
     setChallenges((prev) => [newC, ...prev]);
     setForm({ title: "", type: "avoid", target: "", duration: "7" });
     setShowForm(false);
+    if (sessionId) {
+      fetch("/api/challenges", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-session-id": sessionId },
+        body: JSON.stringify(newC),
+      }).catch(() => {});
+    }
   }
 
   function getStreak(challenge: Challenge) {
@@ -696,10 +717,42 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>("profile");
   const [profile, setProfile] = useState<Profile>({ nama: "", bb: "", tb: "", likes: [], dislikes: [] });
   const [saved, setSaved] = useState(false);
+  const [sessionId, setSessionId] = useState("");
+
+  useEffect(() => {
+    let id = localStorage.getItem("cleaneat_session");
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem("cleaneat_session", id);
+    }
+    setSessionId(id);
+    fetch("/api/setup", { method: "POST" }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    fetch("/api/profile", { headers: { "x-session-id": sessionId } })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data) {
+          setProfile(data);
+          setSaved(true);
+          setScreen("planner");
+        }
+      })
+      .catch(() => {});
+  }, [sessionId]);
 
   function handleSave() {
     setSaved(true);
     setScreen("planner");
+    if (sessionId) {
+      fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-session-id": sessionId },
+        body: JSON.stringify(profile),
+      }).catch(() => {});
+    }
   }
 
   const navItems = [
@@ -730,7 +783,7 @@ export default function App() {
             <div className="error-msg" style={{ marginTop: 20 }}>Isi profil dulu ya!</div>
           </div>
         )}
-        {screen === "challenge" && <ChallengeScreen />}
+        {screen === "challenge" && <ChallengeScreen sessionId={sessionId} />}
         {screen === "tips" && <TipsScreen profile={profile} />}
 
         <nav className="bottom-nav">
