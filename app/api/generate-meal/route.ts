@@ -19,7 +19,7 @@ function calcBMI(bb: string, tb: string) {
 export async function POST(req: NextRequest) {
   const { profile, day } = await req.json();
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "API key not configured" }, { status: 500 });
   }
@@ -44,17 +44,19 @@ export async function POST(req: NextRequest) {
     dislikes +
     '\n- Tujuan: clean eating, berat badan stabil\n\nBuat meal plan 4 waktu makan. Balas HANYA JSON ini tanpa markdown:\n{"sarapan":{"nama":"","deskripsi":"","estimasi_harga":"Rp X.000","kalori":"~XXX kcal"},"siang":{"nama":"","deskripsi":"","estimasi_harga":"Rp X.000","kalori":"~XXX kcal"},"malam":{"nama":"","deskripsi":"","estimasi_harga":"Rp X.000","kalori":"~XXX kcal"},"snack":{"nama":"","deskripsi":"","estimasi_harga":"Rp X.000","kalori":"~XXX kcal"}}';
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 1000 },
-      }),
-    }
-  );
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 1000,
+      temperature: 0.7,
+    }),
+  });
 
   const data = await res.json();
 
@@ -62,7 +64,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: data.error?.message ?? "API error" }, { status: res.status });
   }
 
-  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
+  const raw = data.choices?.[0]?.message?.content ?? "{}";
 
   try {
     const parsed = JSON.parse(raw.replace(/```json/g, "").replace(/```/g, "").trim());
