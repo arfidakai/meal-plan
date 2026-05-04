@@ -767,7 +767,6 @@ export default function App() {
       <style>{appStyle}</style>
       <div className="app">
         <div className="status-bar">
-          <span>9:41</span>
           <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 14, color: "var(--sage-dark)" }}>
             CleanEat
           </span>
