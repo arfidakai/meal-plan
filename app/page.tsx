@@ -100,9 +100,23 @@ const appStyle = `
   .empty-challenge p { font-size: 14px; margin-top: 8px; }
   .btn-danger { background: none; border: 1.5px solid var(--red); color: var(--red); border-radius: 10px; padding: 6px 12px; font-size: 11px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; }
   .completed-banner { background: linear-gradient(135deg, var(--sage-dark), var(--sage)); color: white; border-radius: 14px; padding: 10px 14px; margin: 8px 18px 12px; font-size: 12px; font-weight: 600; text-align: center; }
+  .stepper { display: flex; align-items: flex-start; margin-bottom: 24px; }
+  .step-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .step-dot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; transition: all 0.2s; }
+  .step-dot-active { background: var(--sage-dark); color: white; }
+  .step-dot-done { background: var(--sage); color: white; }
+  .step-dot-pending { background: var(--border); color: var(--muted); }
+  .step-label { font-size: 10px; color: var(--muted); font-weight: 500; white-space: nowrap; }
+  .step-label-active { color: var(--sage-dark); font-weight: 600; }
+  .step-line { flex: 1; height: 2px; background: var(--border); margin: 15px 6px 0; transition: background 0.2s; }
+  .step-line-done { background: var(--sage); }
+  .nav-row { display: flex; gap: 10px; margin-top: 4px; }
+  .btn-back { flex: 1; background: var(--bg); border: 1.5px solid var(--border); border-radius: 16px; padding: 15px; font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; color: var(--muted); }
+  .btn-skip { width: 100%; background: none; border: none; font-size: 13px; color: var(--muted); font-family: 'DM Sans', sans-serif; cursor: pointer; padding: 10px; text-decoration: underline; }
 `;
 
 // ── Constants ───────────────────────────────────────────────────────────────
+
 const FOOD_OPTIONS: Record<string, string[]> = {
   protein: ["Ayam", "Tahu", "Tempe", "Telur", "Ikan", "Udang", "Daging sapi", "Tuna kaleng"],
   carbs: ["Nasi merah", "Oat", "Kentang", "Singkong", "Nasi putih", "Jagung", "Roti gandum"],
@@ -116,18 +130,42 @@ const CAT_LABELS: Record<string, string> = {
   fruits: "Buah",
 };
 const DAYS = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
-const MEALS = [
-  { key: "sarapan", label: "Sarapan", time: "06.00 - 08.00" },
-  { key: "siang", label: "Makan Siang", time: "11.30 - 13.00" },
-  { key: "malam", label: "Makan Malam", time: "18.00 - 19.30" },
-  { key: "snack", label: "Snack", time: "Bebas" },
-];
+const MEAL_CONFIGS: Record<string, { key: string; label: string; time: string }[]> = {
+  "2": [
+    { key: "sarapan", label: "Sarapan", time: "07.00 - 08.00" },
+    { key: "malam", label: "Makan Malam", time: "18.00 - 19.30" },
+  ],
+  "3": [
+    { key: "sarapan", label: "Sarapan", time: "07.00 - 08.00" },
+    { key: "siang", label: "Makan Siang", time: "11.30 - 13.00" },
+    { key: "malam", label: "Makan Malam", time: "18.00 - 19.30" },
+  ],
+  "4": [
+    { key: "sarapan", label: "Sarapan", time: "06.00 - 08.00" },
+    { key: "siang", label: "Makan Siang", time: "11.30 - 13.00" },
+    { key: "malam", label: "Makan Malam", time: "18.00 - 19.30" },
+    { key: "snack", label: "Snack", time: "Bebas" },
+  ],
+  "5": [
+    { key: "sarapan", label: "Sarapan", time: "07.00 - 08.00" },
+    { key: "snack_pagi", label: "Snack Pagi", time: "10.00 - 10.30" },
+    { key: "siang", label: "Makan Siang", time: "12.00 - 13.00" },
+    { key: "snack_sore", label: "Snack Sore", time: "15.30 - 16.00" },
+    { key: "malam", label: "Makan Malam", time: "18.00 - 19.30" },
+  ],
+};
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Profile {
   nama: string;
   bb: string;
   tb: string;
+  usia: string;
+  gender: string;
+  aktivitas: string;
+  tujuan: string;
+  budget: string;
+  frekuensiMakan: string;
   likes: string[];
   dislikes: string[];
 }
@@ -140,10 +178,7 @@ interface MealItem {
 }
 
 interface DayPlan {
-  sarapan?: MealItem;
-  siang?: MealItem;
-  malam?: MealItem;
-  snack?: MealItem;
+  [key: string]: MealItem | undefined;
 }
 
 interface Challenge {
@@ -182,20 +217,35 @@ async function generateMealPlan(profile: Profile, day: number): Promise<DayPlan>
 }
 
 // ── Profile Screen ───────────────────────────────────────────────────────────
+const STEPS = [
+  { label: "Data Diri" },
+  { label: "Gaya Hidup" },
+  { label: "Preferensi" },
+];
+
 function ProfileScreen({
   profile,
   setProfile,
   onSave,
+  saved,
+  mode,
 }: {
   profile: Profile;
   setProfile: React.Dispatch<React.SetStateAction<Profile>>;
   onSave: () => void;
-}) {
+  saved: boolean;
+  mode: "onboarding" | "edit";
+})
+{
   const bmi = calcBMI(profile.bb, profile.tb);
-  const [mode, setMode] = useState<"like" | "dislike">("like");
+  const [step, setStep] = useState(1);
+  const [foodMode, setFoodMode] = useState<"like" | "dislike">("like");
+
+  const step1Ready = !!(profile.nama && profile.bb && profile.tb && profile.usia && profile.gender);
+  const step2Ready = !!(profile.aktivitas && profile.tujuan);
 
   function toggleFood(food: string) {
-    if (mode === "like") {
+    if (foodMode === "like") {
       setProfile((p) => ({
         ...p,
         likes: p.likes.includes(food) ? p.likes.filter((f) => f !== food) : [...p.likes, food],
@@ -216,88 +266,251 @@ function ProfileScreen({
     return "tag";
   }
 
-  const ready = profile.bb && profile.tb && profile.nama;
   const likeStyle = {
-    background: mode === "like" ? "var(--sage-light)" : "var(--bg)",
-    borderColor: mode === "like" ? "var(--sage)" : "var(--border)",
-    color: mode === "like" ? "var(--sage-dark)" : "var(--muted)",
+    background: foodMode === "like" ? "var(--sage-light)" : "var(--bg)",
+    borderColor: foodMode === "like" ? "var(--sage)" : "var(--border)",
+    color: foodMode === "like" ? "var(--sage-dark)" : "var(--muted)",
   };
   const dislikeStyle = {
-    background: mode === "dislike" ? "var(--red-light)" : "var(--bg)",
-    borderColor: mode === "dislike" ? "var(--red)" : "var(--border)",
-    color: mode === "dislike" ? "var(--red)" : "var(--muted)",
+    background: foodMode === "dislike" ? "var(--red-light)" : "var(--bg)",
+    borderColor: foodMode === "dislike" ? "var(--red)" : "var(--border)",
+    color: foodMode === "dislike" ? "var(--red)" : "var(--muted)",
   };
+
+  const stepTitles = ["Data Diri", "Gaya Hidup", "Preferensi Makan"];
+  const stepSubs = [
+    "Isi info dasarmu dulu",
+    "Biar rekomendasinya makin tepat",
+    "Opsional — bisa dilewati",
+  ];
 
   return (
     <div className="screen">
       <div className="screen-header">
-        <h1>Profil Kamu</h1>
-        <p>Isi data dulu biar rekomendasinya pas!</p>
+        <h1>{stepTitles[step - 1]}</h1>
+        <p>{stepSubs[step - 1]}</p>
       </div>
-      <div className="card">
-        <div className="card-label">Data Diri</div>
-        <div className="input-group" style={{ marginBottom: 10 }}>
-          <label>Nama</label>
-          <input
-            value={profile.nama}
-            onChange={(e) => setProfile((p) => ({ ...p, nama: e.target.value }))}
-            placeholder="Nama lo..."
-          />
-        </div>
-        <div className="profile-grid">
-          <div className="input-group">
-            <label>Berat Badan (kg)</label>
+
+      {/* Stepper */}
+      <div className="stepper">
+        {STEPS.map((s, i) => {
+          const n = i + 1;
+          const done = n < step;
+          const active = n === step;
+          return (
+            <div key={n} style={{ display: "flex", alignItems: "flex-start", flex: i < STEPS.length - 1 ? 1 : 0 }}>
+              <div className="step-item">
+                <div className={"step-dot " + (done ? "step-dot-done" : active ? "step-dot-active" : "step-dot-pending")}>
+                  {done ? "✓" : n}
+                </div>
+                <span className={"step-label" + (active ? " step-label-active" : "")}>{s.label}</span>
+              </div>
+              {i < STEPS.length - 1 && (
+                <div className={"step-line" + (done ? " step-line-done" : "")} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Step 1: Data Diri */}
+      {step === 1 && (
+        <div className="card">
+          <div className="input-group" style={{ marginBottom: 10 }}>
+            <label>Nama</label>
             <input
-              type="number"
-              value={profile.bb}
-              onChange={(e) => setProfile((p) => ({ ...p, bb: e.target.value }))}
-              placeholder="55"
+              value={profile.nama}
+              onChange={(e) => setProfile((p) => ({ ...p, nama: e.target.value }))}
+              placeholder="Nama kamu"
             />
           </div>
-          <div className="input-group">
-            <label>Tinggi Badan (cm)</label>
-            <input
-              type="number"
-              value={profile.tb}
-              onChange={(e) => setProfile((p) => ({ ...p, tb: e.target.value }))}
-              placeholder="160"
-            />
-          </div>
-        </div>
-        {bmi && (
-          <div className="bmi-row">
-            <span style={{ fontSize: 12, color: "var(--muted)" }}>BMI lo:</span>
-            <div className="bmi-badge">
-              <span className="bmi-val">{bmi.val}</span>
-              {bmi.cat}
+          <div className="profile-grid">
+            <div className="input-group">
+              <label>Berat Badan (kg)</label>
+              <input
+                type="number"
+                value={profile.bb}
+                onChange={(e) => setProfile((p) => ({ ...p, bb: e.target.value }))}
+                placeholder="55"
+              />
+            </div>
+            <div className="input-group">
+              <label>Tinggi Badan (cm)</label>
+              <input
+                type="number"
+                value={profile.tb}
+                onChange={(e) => setProfile((p) => ({ ...p, tb: e.target.value }))}
+                placeholder="160"
+              />
+            </div>
+            <div className="input-group">
+              <label>Usia (tahun)</label>
+              <input
+                type="number"
+                value={profile.usia}
+                onChange={(e) => setProfile((p) => ({ ...p, usia: e.target.value }))}
+                placeholder="25"
+              />
+            </div>
+            <div className="input-group">
+              <label>Jenis Kelamin</label>
+              <select
+                value={profile.gender}
+                onChange={(e) => setProfile((p) => ({ ...p, gender: e.target.value }))}
+              >
+                <option value="">Pilih...</option>
+                <option value="laki-laki">Laki-laki</option>
+                <option value="perempuan">Perempuan</option>
+              </select>
             </div>
           </div>
-        )}
-      </div>
-      <div className="card">
-        <div className="card-label">Preferensi Makanan</div>
-        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-          <button className="mode-btn" style={likeStyle} onClick={() => setMode("like")}>Suka</button>
-          <button className="mode-btn" style={dislikeStyle} onClick={() => setMode("dislike")}>Ga Suka</button>
+          {bmi && (
+            <div className="bmi-row">
+              <span style={{ fontSize: 12, color: "var(--muted)" }}>BMI kamu:</span>
+              <div className="bmi-badge">
+                <span className="bmi-val">{bmi.val}</span>
+                {bmi.cat}
+              </div>
+            </div>
+          )}
         </div>
-        <p style={{ fontSize: 11, color: "var(--muted)", marginBottom: 8 }}>
-          {mode === "like" ? "Tap makanan yang lo suka" : "Tap makanan yang lo ga suka"}
-        </p>
-        {Object.keys(FOOD_OPTIONS).map((cat) => (
-          <div key={cat} style={{ marginBottom: 12 }}>
-            <div className="cat-label">{CAT_LABELS[cat]}</div>
+      )}
+
+      {/* Step 2: Gaya Hidup */}
+      {step === 2 && (
+        <>
+          <div className="card">
+            <div className="card-label">Level Aktivitas</div>
             <div className="tag-wrap">
-              {FOOD_OPTIONS[cat].map((f) => (
-                <span key={f} className={getTagClass(f)} onClick={() => toggleFood(f)}>{f}</span>
+              {[
+                { val: "sedentary", label: "Jarang gerak", desc: "Kerja duduk, olahraga jarang" },
+                { val: "ringan", label: "Ringan", desc: "Olahraga 1-2x/minggu" },
+                { val: "sedang", label: "Sedang", desc: "Olahraga 3-5x/minggu" },
+                { val: "berat", label: "Aktif", desc: "Olahraga tiap hari / kerja fisik" },
+              ].map((opt) => (
+                <span
+                  key={opt.val}
+                  className={"tag" + (profile.aktivitas === opt.val ? " tag-like" : "")}
+                  onClick={() => setProfile((p) => ({ ...p, aktivitas: opt.val }))}
+                  style={{ display: "flex", flexDirection: "column", gap: 2, padding: "8px 14px" }}
+                >
+                  <span style={{ fontWeight: 600 }}>{opt.label}</span>
+                  <span style={{ fontSize: 10, opacity: 0.75 }}>{opt.desc}</span>
+                </span>
+              ))}
+            </div>
+            <div className="card-label" style={{ marginTop: 16 }}>Tujuan Utama</div>
+            <div className="tag-wrap">
+              {[
+                { val: "turun", label: "Turun BB", emoji: "📉" },
+                { val: "naik", label: "Naik BB / Otot", emoji: "📈" },
+                { val: "maintain", label: "Maintain", emoji: "⚖️" },
+                { val: "sehat", label: "Hidup Sehat", emoji: "🌿" },
+              ].map((opt) => (
+                <span
+                  key={opt.val}
+                  className={"tag" + (profile.tujuan === opt.val ? " tag-like" : "")}
+                  onClick={() => setProfile((p) => ({ ...p, tujuan: opt.val }))}
+                >
+                  {opt.emoji} {opt.label}
+                </span>
               ))}
             </div>
           </div>
-        ))}
+          <div className="card">
+            <div className="card-label">Budget Makan Per Hari</div>
+            <div className="tag-wrap" style={{ marginBottom: 12 }}>
+              {["15000", "25000", "35000", "50000"].map((b) => (
+                <span
+                  key={b}
+                  className={"tag" + (profile.budget === b ? " tag-like" : "")}
+                  onClick={() => setProfile((p) => ({ ...p, budget: b }))}
+                >
+                  Rp {Number(b).toLocaleString("id-ID")}
+                </span>
+              ))}
+            </div>
+            <div className="input-group">
+              <label>Atau ketik sendiri (Rp)</label>
+              <input
+                type="number"
+                value={profile.budget}
+                min="5000"
+                onChange={(e) => setProfile((p) => ({ ...p, budget: e.target.value }))}
+                placeholder="30000"
+              />
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-label">Frekuensi Makan Per Hari</div>
+            <div className="tag-wrap">
+              {[
+                { val: "2", label: "2x", desc: "Sarapan + Malam" },
+                { val: "3", label: "3x", desc: "Sarapan + Siang + Malam" },
+                { val: "4", label: "4x", desc: "+ 1 Snack" },
+                { val: "5", label: "5x", desc: "+ 2 Snack" },
+              ].map((opt) => (
+                <span
+                  key={opt.val}
+                  className={"tag" + (profile.frekuensiMakan === opt.val ? " tag-like" : "")}
+                  onClick={() => setProfile((p) => ({ ...p, frekuensiMakan: opt.val }))}
+                  style={{ display: "flex", flexDirection: "column", gap: 2, padding: "8px 14px" }}
+                >
+                  <span style={{ fontWeight: 700, fontSize: 14 }}>{opt.label}</span>
+                  <span style={{ fontSize: 10, opacity: 0.75 }}>{opt.desc}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Step 3: Preferensi Makanan */}
+      {step === 3 && (
+        <div className="card">
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            <button className="mode-btn" style={likeStyle} onClick={() => setFoodMode("like")}>Suka</button>
+            <button className="mode-btn" style={dislikeStyle} onClick={() => setFoodMode("dislike")}>Ga Suka</button>
+          </div>
+          <p style={{ fontSize: 11, color: "var(--muted)", marginBottom: 8 }}>
+            {foodMode === "like" ? "Tap makanan yang kamu suka" : "Tap makanan yang kamu ga suka"}
+          </p>
+          {Object.keys(FOOD_OPTIONS).map((cat) => (
+            <div key={cat} style={{ marginBottom: 12 }}>
+              <div className="cat-label">{CAT_LABELS[cat]}</div>
+              <div className="tag-wrap">
+                {FOOD_OPTIONS[cat].map((f) => (
+                  <span key={f} className={getTagClass(f)} onClick={() => toggleFood(f)}>{f}</span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Navigation */}
+      <div className="nav-row">
+        {step > 1 && (
+          <button className="btn-back" onClick={() => setStep((s) => s - 1)}>← Kembali</button>
+        )}
+        {step < 3 ? (
+          <button
+            className="btn-primary"
+            style={{ flex: 2 }}
+            disabled={step === 1 ? !step1Ready : !step2Ready}
+            onClick={() => setStep((s) => s + 1)}
+          >
+            Lanjut →
+          </button>
+        ) : (
+          <button className="btn-primary" style={{ flex: 2 }} onClick={onSave}>
+            Mulai Clean Eating!
+          </button>
+        )}
       </div>
-      <button className="btn-primary" disabled={!ready} onClick={onSave}>
-        Mulai Clean Eating!
-      </button>
-      {!ready && <p className="hint-text">Isi nama, BB dan TB dulu ya</p>}
+      {step === 3 && (
+        <button className="btn-skip" onClick={onSave}>Lewati, langsung mulai</button>
+      )}
     </div>
   );
 }
@@ -348,8 +561,8 @@ function PlannerScreen({ profile }: { profile: Profile }) {
         ))}
       </div>
       {error && <div className="error-msg">{error}</div>}
-      {MEALS.map((meal) => {
-        const mealData = plan && plan[meal.key as keyof DayPlan];
+      {(MEAL_CONFIGS[profile.frekuensiMakan] ?? MEAL_CONFIGS["3"]).map((meal) => {
+        const mealData = plan && plan[meal.key];
         return (
           <div key={meal.key} className="meal-slot">
             <div className="meal-slot-header">
@@ -491,7 +704,7 @@ function ChallengeScreen({ sessionId }: { sessionId: string }) {
     <div className="screen">
       <div className="screen-header">
         <h1>Challenge</h1>
-        <p>Buktiin konsistensi lo!</p>
+        <p>Buktiin konsistensi kamu!</p>
       </div>
 
       {challenges.length === 0 && !showForm && (
@@ -683,7 +896,7 @@ function TipsScreen({ profile }: { profile: Profile }) {
         <p>Panduan clean eating buat lo</p>
       </div>
       <div className="tip-card">
-        <h3>{bmi ? "BMI lo: " + bmi.val : "Isi profil dulu ya!"}</h3>
+        <h3>{bmi ? "BMI (" + profile.nama + "): " + bmi.val : "Isi profil dulu ya!"}</h3>
         {bmi && <p>{bmi.cat} - Tetap jaga pola makan sehat dan konsisten ya!</p>}
       </div>
       <div className="card">
@@ -714,8 +927,9 @@ function TipsScreen({ profile }: { profile: Profile }) {
 type Screen = "profile" | "planner" | "challenge" | "tips";
 
 export default function App() {
+const [profileMode, setProfileMode] = useState<"onboarding" | "edit">("onboarding");
   const [screen, setScreen] = useState<Screen>("profile");
-  const [profile, setProfile] = useState<Profile>({ nama: "", bb: "", tb: "", likes: [], dislikes: [] });
+  const [profile, setProfile] = useState<Profile>({ nama: "", bb: "", tb: "", usia: "", gender: "", aktivitas: "", tujuan: "", budget: "30000", frekuensiMakan: "3", likes: [], dislikes: [] });
   const [saved, setSaved] = useState(false);
   const [sessionId, setSessionId] = useState("");
 
@@ -735,9 +949,22 @@ export default function App() {
       .then((r) => r.json())
       .then((data) => {
         if (data) {
-          setProfile(data);
+          setProfile({
+            nama: data.nama ?? "",
+            bb: data.bb ?? "",
+            tb: data.tb ?? "",
+            usia: data.usia ?? "",
+            gender: data.gender ?? "",
+            aktivitas: data.aktivitas ?? "",
+            tujuan: data.tujuan ?? "",
+            budget: data.budget ?? "30000",
+            frekuensiMakan: data.frekuensiMakan ?? "3",
+            likes: data.likes ?? [],
+            dislikes: data.dislikes ?? [],
+          });
           setSaved(true);
           setScreen("planner");
+          setProfileMode("edit"); 
         }
       })
       .catch(() => {});
@@ -746,6 +973,7 @@ export default function App() {
   function handleSave() {
     setSaved(true);
     setScreen("planner");
+    setProfileMode("edit");
     if (sessionId) {
       fetch("/api/profile", {
         method: "POST",
@@ -774,7 +1002,13 @@ export default function App() {
         </div>
 
         {screen === "profile" && (
-          <ProfileScreen profile={profile} setProfile={setProfile} onSave={handleSave} />
+         <ProfileScreen
+  profile={profile}
+  setProfile={setProfile}
+  onSave={handleSave}
+  saved={saved}
+  mode={profileMode}
+/>
         )}
         {screen === "planner" && saved && <PlannerScreen profile={profile} />}
         {screen === "planner" && !saved && (
