@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       target: r.target,
       duration: r.duration,
       checkins: r.checkins,
-      createdAt: Number(r.created_at),
+      createdAt: typeof r.created_at === 'number' ? r.created_at : new Date(r.created_at as string).getTime(),
     }))
   );
 }
