@@ -5,11 +5,55 @@ import { calcBMI } from "@/lib/utils";
 
 type Tip = { title: string; body: string };
 
+// ── Completeness check ────────────────────────────────────────────────────────
+
+function getMissingFields(profile: Profile): string[] {
+  const missing: string[] = [];
+  if (!profile.bb || !profile.tb) missing.push("Berat & Tinggi");
+  if (!profile.tujuan) missing.push("Tujuan");
+  if (!profile.aktivitas) missing.push("Aktivitas");
+  return missing;
+}
+
+// ── Generic tips (fallback when profile kosong) ───────────────────────────────
+
+const GENERIC_TIPS: Tip[] = [
+  {
+    title: "Clean Eating itu Simpel",
+    body: "Pilih makanan yang paling dekat bentuk aslinya — makin sedikit diproses, makin baik. Tidak perlu diet ketat, cukup konsisten.",
+  },
+  {
+    title: "Protein di Setiap Makan",
+    body: "Tahu, tempe, telur, dan ikan adalah sumber protein terbaik untuk budget di bawah Rp 30K per hari.",
+  },
+  {
+    title: "Karbohidrat Kompleks",
+    body: "Ganti nasi putih dengan nasi merah atau oat. Energi lebih stabil dan rasa kenyang lebih lama.",
+  },
+  {
+    title: "Perbanyak Sayur",
+    body: "Isi setengah piringmu dengan sayuran setiap makan. Bayam, kangkung, dan brokoli murah dan kaya nutrisi.",
+  },
+  {
+    title: "Hidrasi",
+    body: "Minimal 8 gelas per hari. Coba minum segelas air dulu sebelum makan — sering kali rasa lapar itu sebenarnya haus.",
+  },
+];
+
+const GENERIC_HACKS: string[] = [
+  "Beli sayuran di pasar pagi — lebih murah 20–30% dan lebih segar",
+  "Masak sendiri jauh lebih hemat dari beli jadi",
+  "Telur dan tempe: protein paling terjangkau dan bergizi tinggi",
+  "Batch cooking: masak sekali untuk 2–3 hari sekaligus",
+  "Pisang sebagai snack: murah, kenyang, dan kaya kalium",
+];
+
+// ── Personalized tips ─────────────────────────────────────────────────────────
+
 function getTips(profile: Profile, bmi: ReturnType<typeof calcBMI>): Tip[] {
   const tips: Tip[] = [];
   const bb = Number(profile.bb);
 
-  // 1. Goal-based
   if (profile.tujuan === "turun") {
     tips.push({
       title: "Defisit Kalori yang Sehat",
@@ -33,7 +77,6 @@ function getTips(profile: Profile, bmi: ReturnType<typeof calcBMI>): Tip[] {
     });
   }
 
-  // 2. BMI-based
   if (bmi) {
     if (bmi.cat === "Underweight") {
       tips.push({
@@ -53,7 +96,6 @@ function getTips(profile: Profile, bmi: ReturnType<typeof calcBMI>): Tip[] {
     }
   }
 
-  // 3. Aktivitas-based
   if (profile.aktivitas === "berat") {
     tips.push({
       title: "Protein untuk Recovery",
@@ -71,7 +113,6 @@ function getTips(profile: Profile, bmi: ReturnType<typeof calcBMI>): Tip[] {
     });
   }
 
-  // 4. Frekuensi makan-based
   if (profile.frekuensiMakan === "2") {
     tips.push({
       title: "Maksimalkan 2 Waktu Makan",
@@ -89,7 +130,6 @@ function getTips(profile: Profile, bmi: ReturnType<typeof calcBMI>): Tip[] {
     });
   }
 
-  // 5. Dislikes-based alternative
   if (profile.dislikes.includes("Nasi merah") || profile.dislikes.includes("Oat")) {
     tips.push({
       title: "Alternatif Karbo Sehat",
@@ -131,21 +171,25 @@ function getHacks(profile: Profile): string[] {
     hacks.push("Buah musiman selalu lebih murah dan lebih bergizi dari buah impor");
   }
 
-  // Preference-based bonus hacks
   if (profile.likes.includes("Tahu") || profile.likes.includes("Tempe")) {
     hacks.push("Tahu & tempe favoritmu bisa diolah 10+ cara: goreng, bacem, tumis, kukus — variasi tanpa biaya tambahan");
   }
   if (profile.dislikes.includes("Nasi putih")) {
-    hacks.push("Sudah hindari nasi putih? Nasi merah hampir sama harganya tapi jauh lebih mengenyangkan karena indeks glikemik lebih rendah");
+    hacks.push("Sudah hindari nasi putih? Nasi merah hampir sama harganya tapi jauh lebih mengenyangkan");
   }
 
   return hacks.slice(0, 5);
 }
 
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export function TipsScreen({ profile }: { profile: Profile }) {
   const bmi = calcBMI(profile.bb, profile.tb);
-  const tips = getTips(profile, bmi);
-  const hacks = getHacks(profile);
+  const missingFields = getMissingFields(profile);
+  const isComplete = missingFields.length === 0;
+
+  const tips = isComplete ? getTips(profile, bmi) : GENERIC_TIPS;
+  const hacks = isComplete ? getHacks(profile) : GENERIC_HACKS;
 
   const tujuanLabel: Record<string, string> = {
     turun: "Turun BB",
@@ -157,11 +201,49 @@ export function TipsScreen({ profile }: { profile: Profile }) {
   return (
     <div className="screen">
       <div className="screen-header">
-        <h1>Tips untuk {profile.nama || "Kamu"}</h1>
-        <p>Disesuaikan dengan profil dan tujuanmu</p>
+        <h1>Tips{profile.nama ? ` untuk ${profile.nama}` : ""}</h1>
+        <p>{isComplete ? "Disesuaikan dengan profil dan tujuanmu" : "Panduan clean eating buat kamu"}</p>
       </div>
 
-      {/* BMI + Goal summary card */}
+      {/* Soft nudge banner — hanya muncul kalau profil belum lengkap */}
+      {!isComplete && (
+        <div style={{
+          background: "var(--gold-light)",
+          border: "1.5px solid var(--gold)",
+          borderRadius: 16,
+          padding: "12px 16px",
+          marginBottom: 14,
+          display: "flex",
+          gap: 10,
+          alignItems: "flex-start",
+        }}>
+          <span style={{ fontSize: 18, flexShrink: 0 }}>✨</span>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--brown)", marginBottom: 4 }}>
+              Tips ini masih umum
+            </div>
+            <div style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.5, marginBottom: 8 }}>
+              Lengkapi profil untuk tips yang disesuaikan dengan kondisi dan tujuanmu.
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {missingFields.map((f) => (
+                <span key={f} style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  background: "var(--gold)",
+                  color: "white",
+                  borderRadius: 50,
+                  padding: "2px 10px",
+                }}>
+                  + {f}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* BMI + Goal card */}
       <div className="tip-card">
         {bmi ? (
           <>
@@ -176,15 +258,15 @@ export function TipsScreen({ profile }: { profile: Profile }) {
           </>
         ) : (
           <>
-            <h3>Lengkapi profil dulu ya!</h3>
-            <p>Isi berat dan tinggi badan agar tips bisa lebih personal.</p>
+            <h3>Yuk mulai clean eating!</h3>
+            <p>Isi berat dan tinggi badan di profil untuk melihat status BMI dan rekomendasi personalmu.</p>
           </>
         )}
       </div>
 
-      {/* Personalized tips */}
+      {/* Tips */}
       <div className="card">
-        <div className="card-label">Tips Personal</div>
+        <div className="card-label">{isComplete ? "Tips Personal" : "Tips Clean Eating"}</div>
         {tips.map((tip) => (
           <div key={tip.title} style={{ display: "flex", gap: 12, marginBottom: 14 }}>
             <div>
@@ -195,10 +277,12 @@ export function TipsScreen({ profile }: { profile: Profile }) {
         ))}
       </div>
 
-      {/* Dynamic budget hacks */}
+      {/* Budget hacks */}
       <div className="card">
         <div className="card-label">
-          Budget Hack · Rp {Number(profile.budget || 0).toLocaleString("id-ID")}/hari
+          {isComplete
+            ? `Budget Hack · Rp ${Number(profile.budget || 0).toLocaleString("id-ID")}/hari`
+            : "Budget Hack"}
         </div>
         {hacks.map((hack, i) => (
           <div key={i} style={{ display: "flex", gap: 10, marginBottom: 8 }}>
