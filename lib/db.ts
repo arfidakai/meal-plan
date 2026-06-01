@@ -30,4 +30,30 @@ export async function initDb() {
       PRIMARY KEY (session_id, id)
     )
   `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS food_preferences (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      nama TEXT NOT NULL,
+      kategori TEXT NOT NULL,
+      kalori TEXT,
+      estimasi_harga TEXT,
+      created_at BIGINT NOT NULL
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS food_stocks (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      nama TEXT NOT NULL,
+      kategori TEXT NOT NULL,
+      jumlah NUMERIC NOT NULL,
+      satuan TEXT NOT NULL,
+      estimasi_harga TEXT,
+      tanggal_beli BIGINT,
+      tanggal_expired BIGINT,
+      catatan TEXT,
+      created_at BIGINT NOT NULL
+    )
+  `;
 }

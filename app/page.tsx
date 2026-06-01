@@ -6,9 +6,11 @@ import { ProfileScreen, ProfileViewScreen } from "@/components/ProfileScreen";
 import { PlannerScreen } from "@/components/PlannerScreen";
 import { ChallengeScreen } from "@/components/ChallengeScreen";
 import { TipsScreen } from "@/components/TipsScreen";
+import { PreferencesScreen } from "@/components/PreferencesScreen";
+import { StockScreen } from "@/components/StockScreen";
 import appStyle from "@/styles/appStyle";
 
-type Screen = "profile" | "planner" | "challenge" | "tips";
+type Screen = "profile" | "planner" | "challenge" | "tips" | "preferences" | "stock";
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>("profile");
@@ -74,6 +76,8 @@ export default function App() {
     { key: "profile" as Screen, icon: "👤", label: "Profil" },
     { key: "planner" as Screen, icon: "🥗", label: "Meal Plan" },
     { key: "challenge" as Screen, icon: "🎯", label: "Challenge" },
+    { key: "preferences" as Screen, icon: "❤️", label: "Preferensi" },
+    { key: "stock" as Screen, icon: "📦", label: "Stock" },
     { key: "tips" as Screen, icon: "💡", label: "Tips" },
   ];
 
@@ -107,6 +111,8 @@ export default function App() {
           </div>
         )}
         {screen === "challenge" && <ChallengeScreen sessionId={sessionId} />}
+        {screen === "preferences" && <PreferencesScreen sessionId={sessionId} onBack={() => setScreen("planner")} />}
+        {screen === "stock" && <StockScreen sessionId={sessionId} onBack={() => setScreen("planner")} />}
         {screen === "tips" && <TipsScreen profile={profile} />}
 
         <nav className="bottom-nav">

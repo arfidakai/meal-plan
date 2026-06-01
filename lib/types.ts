@@ -32,3 +32,25 @@ export interface Challenge {
   checkins: boolean[];
   createdAt: number;
 }
+
+export interface FoodPreference {
+  id?: string;
+  nama: string;
+  kategori: string; // e.g., "protein", "sayur", "karbo", "buah", "snack"
+  kalori?: string;
+  estimasi_harga?: string;
+  createdAt?: number;
+}
+
+export interface FoodStock {
+  id?: string;
+  nama: string;
+  kategori: string;
+  jumlah: number;
+  satuan: string; // e.g., "pcs", "kg", "liter", "bungkus"
+  estimasi_harga?: string;
+  tanggal_beli?: number;
+  tanggal_expired?: number;
+  catatan?: string;
+  createdAt?: number;
+}
