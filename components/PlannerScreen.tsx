@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect,useMemo } from "react";
 import { DayPlan, Profile } from "@/lib/types";
 import { DAYS, MEAL_CONFIGS } from "@/lib/constants";
 import { generateMealPlan } from "@/lib/utils";
+import { getRandomPersonalTip } from "@/lib/tipsEngine";
 
 export function PlannerScreen({ profile }: { profile: Profile }) {
   const [activeDay, setActiveDay] = useState(0);
   const [plans, setPlans] = useState<Record<number, DayPlan>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const dailyTip = useMemo(() => getRandomPersonalTip(profile), [profile]);
 
   function loadDay(day: number) {
     setLoading(true);
@@ -27,7 +29,6 @@ export function PlannerScreen({ profile }: { profile: Profile }) {
 
   useEffect(() => {
     if (!plans[activeDay]) loadDay(activeDay);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeDay]);
 
   const plan = plans[activeDay];
@@ -48,6 +49,23 @@ export function PlannerScreen({ profile }: { profile: Profile }) {
             {d}
           </button>
         ))}
+      </div>
+      <div style={{
+        background: "var(--sage-light, #F1F5F2)",
+        border: "1px solid var(--sage, #C2D1C6)",
+        borderRadius: "16px",
+        padding: "14px 16px",
+        marginBottom: "20px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "4px"
+      }}>
+        <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--sage-dark, #4A6B52)" }}>
+          {dailyTip.title}
+        </div>
+        <div style={{ fontSize: "12px", color: "var(--text)", lineHeight: "1.4", opacity: 0.85 }}>
+          {dailyTip.body}
+        </div>
       </div>
       {error && <div className="error-msg">{error}</div>}
       {(MEAL_CONFIGS[profile.frekuensiMakan] ?? MEAL_CONFIGS["3"]).map((meal) => {

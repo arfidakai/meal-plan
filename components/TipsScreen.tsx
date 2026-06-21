@@ -181,8 +181,6 @@ function getHacks(profile: Profile): string[] {
   return hacks.slice(0, 5);
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 export function TipsScreen({ profile }: { profile: Profile }) {
   const bmi = calcBMI(profile.bb, profile.tb);
   const missingFields = getMissingFields(profile);
