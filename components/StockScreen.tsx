@@ -14,6 +14,7 @@ const UNITS = ["pcs", "kg", "gram", "liter", "ml", "bungkus", "kaleng", "botol"]
 export function StockScreen({ sessionId, onBack }: StockScreenProps) {
   const [stocks, setStocks] = useState<FoodStock[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [nama, setNama] = useState("");
   const [kategori, setKategori] = useState("protein");
   const [jumlah, setJumlah] = useState("");
@@ -83,6 +84,7 @@ export function StockScreen({ sessionId, onBack }: StockScreenProps) {
       setTglExpired("");
       setCatatan("");
       setSuccess("Stock ditambahkan!");
+      setShowAddModal(false);
     } catch (err) {
       console.error(err);
       setError("Gagal menambahkan stock");
@@ -156,91 +158,138 @@ export function StockScreen({ sessionId, onBack }: StockScreenProps) {
         </button>
       </div>
 
-      {/* Add stock form */}
-      <div className="card" style={{ marginBottom: "24px" }}>
-        <div className="card-label">Tambah Stock</div>
-        <form onSubmit={handleAddStock}>
-          <div className="input-group" style={{ marginBottom: "12px" }}>
-            <label>Nama Makanan*</label>
-            <input
-              type="text"
-              value={nama}
-              onChange={(e) => setNama(e.target.value)}
-              placeholder="e.g., Telur Ayam"
-            />
-          </div>
-
-          <div style={{ marginBottom: "12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            <div className="input-group">
-              <label>Kategori</label>
-              <select value={kategori} onChange={(e) => setKategori(e.target.value)}>
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
-                ))}
-              </select>
-            </div>
-            <div className="input-group">
-              <label>Jumlah*</label>
-              <input
-                type="number"
-                step="0.1"
-                value={jumlah}
-                onChange={(e) => setJumlah(e.target.value)}
-                placeholder="e.g., 12"
-              />
-            </div>
-          </div>
-
-          <div className="input-group" style={{ marginBottom: "12px" }}>
-            <label>Satuan*</label>
-            <select value={satuan} onChange={(e) => setSatuan(e.target.value)}>
-              {UNITS.map((unit) => (
-                <option key={unit} value={unit}>{unit}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
-            <div className="input-group">
-              <label>Harga (Rp)</label>
-              <input
-                type="text"
-                value={harga}
-                onChange={(e) => setHarga(e.target.value)}
-                placeholder="e.g., 30000"
-              />
-            </div>
-            <div className="input-group">
-              <label>Tanggal Expired</label>
-              <input
-                type="date"
-                value={tglExpired}
-                onChange={(e) => setTglExpired(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="input-group" style={{ marginBottom: "12px" }}>
-            <label>Catatan</label>
-            <textarea
-              value={catatan}
-              onChange={(e) => setCatatan(e.target.value)}
-              placeholder="e.g., Disimpan di kulkas"
-              style={{
-                minHeight: "60px",
-                fontFamily: "inherit",
-              }}
-            />
-          </div>
-
-          {error && <div className="error-msg" style={{ marginBottom: "12px" }}>{error}</div>}
-          {success && <div style={{ background: "#E8F5E9", border: "1px solid #C8E6C9", borderRadius: "12px", padding: "12px 14px", fontSize: "12px", color: "#2E7D32", marginBottom: "12px" }}>{success}</div>}
-
-          <button type="submit" className="btn-primary">
-            Tambah Stock
-          </button>
-        </form>
+      <div style={{ marginBottom: "18px" }}>
+        <button type="button" className="btn-primary" onClick={() => setShowAddModal(true)}>
+          + Tambah Stock
+        </button>
       </div>
+
+      {showAddModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(42, 42, 42, 0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 200,
+            padding: "20px",
+          }}
+          onClick={() => setShowAddModal(false)}
+        >
+          <div
+            className="card"
+            style={{
+              width: "100%",
+              maxWidth: "520px",
+              marginBottom: 0,
+              maxHeight: "90vh",
+              overflowY: "auto",
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <div className="card-label" style={{ marginBottom: 0 }}>Tambah Stock</div>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: "20px",
+                  cursor: "pointer",
+                  color: "var(--muted)",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddStock}>
+              <div className="input-group" style={{ marginBottom: "12px" }}>
+                <label>Nama Makanan*</label>
+                <input
+                  type="text"
+                  value={nama}
+                  onChange={(e) => setNama(e.target.value)}
+                  placeholder="e.g., Telur Ayam"
+                />
+              </div>
+
+              <div style={{ marginBottom: "12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div className="input-group">
+                  <label>Kategori</label>
+                  <select value={kategori} onChange={(e) => setKategori(e.target.value)}>
+                    {CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label>Jumlah*</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={jumlah}
+                    onChange={(e) => setJumlah(e.target.value)}
+                    placeholder="e.g., 12"
+                  />
+                </div>
+              </div>
+
+              <div className="input-group" style={{ marginBottom: "12px" }}>
+                <label>Satuan*</label>
+                <select value={satuan} onChange={(e) => setSatuan(e.target.value)}>
+                  {UNITS.map((unit) => (
+                    <option key={unit} value={unit}>{unit}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                <div className="input-group">
+                  <label>Harga (Rp)</label>
+                  <input
+                    type="text"
+                    value={harga}
+                    onChange={(e) => setHarga(e.target.value)}
+                    placeholder="e.g., 30000"
+                  />
+                </div>
+                <div className="input-group">
+                  <label>Tanggal Expired</label>
+                  <input
+                    type="date"
+                    value={tglExpired}
+                    onChange={(e) => setTglExpired(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="input-group" style={{ marginBottom: "12px" }}>
+                <label>Catatan</label>
+                <textarea
+                  value={catatan}
+                  onChange={(e) => setCatatan(e.target.value)}
+                  placeholder="e.g., Disimpan di kulkas"
+                  style={{
+                    minHeight: "60px",
+                    fontFamily: "inherit",
+                  }}
+                />
+              </div>
+
+              {error && <div className="error-msg" style={{ marginBottom: "12px" }}>{error}</div>}
+              {success && <div style={{ background: "#E8F5E9", border: "1px solid #C8E6C9", borderRadius: "12px", padding: "12px 14px", fontSize: "12px", color: "#2E7D32", marginBottom: "12px" }}>{success}</div>}
+
+              <button type="submit" className="btn-primary">
+                Simpan Stock
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Stock list */}
       <div style={{ marginBottom: "24px" }}>

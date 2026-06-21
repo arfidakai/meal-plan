@@ -20,7 +20,6 @@ export function PreferencesScreen({ sessionId, onBack }: PreferencesScreenProps)
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Load preferences on mount
   useEffect(() => {
     loadPreferences();
   }, []);

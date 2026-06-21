@@ -5,12 +5,10 @@ import { Profile } from "@/lib/types";
 import { ProfileScreen, ProfileViewScreen } from "@/components/ProfileScreen";
 import { PlannerScreen } from "@/components/PlannerScreen";
 import { ChallengeScreen } from "@/components/ChallengeScreen";
-import { TipsScreen } from "@/components/TipsScreen";
-import { PreferencesScreen } from "@/components/PreferencesScreen";
 import { StockScreen } from "@/components/StockScreen";
 import appStyle from "@/styles/appStyle";
 
-type Screen = "profile" | "planner" | "challenge" | "tips" | "preferences" | "stock";
+type Screen = "profile" | "planner" | "challenge" | "stock";
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>("profile");
@@ -76,9 +74,7 @@ export default function App() {
     { key: "profile" as Screen, icon: "👤", label: "Profil" },
     { key: "planner" as Screen, icon: "🥗", label: "Meal Plan" },
     { key: "challenge" as Screen, icon: "🎯", label: "Challenge" },
-    { key: "preferences" as Screen, icon: "❤️", label: "Preferensi" },
     { key: "stock" as Screen, icon: "📦", label: "Stock" },
-    { key: "tips" as Screen, icon: "💡", label: "Tips" },
   ];
 
   return (
@@ -89,12 +85,16 @@ export default function App() {
           <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 14, color: "var(--sage-dark)" }}>
             CleanEat
           </span>
-          <span>●●●</span>
         </div>
 
         {screen === "profile" && saved && !editingProfile && (
-          <ProfileViewScreen profile={profile} onEdit={() => setEditingProfile(true)} />
+          <ProfileViewScreen 
+            profile={profile} 
+            onEdit={() => setEditingProfile(true)} 
+            sessionId={sessionId}
+          />
         )}
+        
         {screen === "profile" && (!saved || editingProfile) && (
           <ProfileScreen
             profile={profile}
@@ -104,16 +104,16 @@ export default function App() {
             mode={saved ? "edit" : "onboarding"}
           />
         )}
+        
         {screen === "planner" && saved && <PlannerScreen profile={profile} />}
         {screen === "planner" && !saved && (
           <div className="screen">
             <div className="error-msg" style={{ marginTop: 20 }}>Isi profil dulu ya!</div>
           </div>
         )}
+        
         {screen === "challenge" && <ChallengeScreen sessionId={sessionId} />}
-        {screen === "preferences" && <PreferencesScreen sessionId={sessionId} onBack={() => setScreen("planner")} />}
         {screen === "stock" && <StockScreen sessionId={sessionId} onBack={() => setScreen("planner")} />}
-        {screen === "tips" && <TipsScreen profile={profile} />}
 
         <nav className="bottom-nav">
           {navItems.map((n) => {
