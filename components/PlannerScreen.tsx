@@ -85,6 +85,26 @@ export function PlannerScreen({ profile }: { profile: Profile }) {
                 </div>
               ) : mealData ? (
                 <div>
+                  {mealData.image && (
+        <div style={{
+          width: "100%",
+          height: "150px",
+          borderRadius: "12px",
+          overflow: "hidden",
+          marginBottom: "12px",
+          backgroundColor: "#f0f0f0"
+        }}>
+          <img 
+            src={mealData.image} 
+            alt={mealData.nama} 
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover"
+            }}
+          />
+        </div>
+      )}
                   <div className="meal-name">{mealData.nama}</div>
                   <div className="meal-desc">{mealData.deskripsi}</div>
                   <div className="meal-meta">
