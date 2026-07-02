@@ -17,6 +17,8 @@ export interface MealItem {
   deskripsi: string;
   estimasi_harga: string;
   kalori: string;
+  image?: string | null;    
+  recipeId?: number | null;
 }
 
 export interface DayPlan {
