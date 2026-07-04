@@ -11,7 +11,9 @@ export function PlannerScreen({ profile }: { profile: Profile }) {
   const [plans, setPlans] = useState<Record<number, DayPlan>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedMeal, setSelectedMeal] = useState<any | null>(null);
   const dailyTip = useMemo(() => getRandomPersonalTip(profile), [profile]);
+  
 
   function loadDay(day: number) {
     setLoading(true);
@@ -85,26 +87,32 @@ export function PlannerScreen({ profile }: { profile: Profile }) {
                 </div>
               ) : mealData ? (
                 <div>
-                  {mealData.image && (
-        <div style={{
-          width: "100%",
-          height: "150px",
-          borderRadius: "12px",
-          overflow: "hidden",
-          marginBottom: "12px",
-          backgroundColor: "#f0f0f0"
-        }}>
-          <img 
-            src={mealData.image} 
-            alt={mealData.nama} 
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover"
-            }}
-          />
-        </div>
-      )}
+       {mealData.image && (
+  <div 
+    onClick={() => setSelectedMeal(mealData)} 
+    style={{
+      width: "100%",
+      height: "150px",
+      borderRadius: "12px",
+      overflow: "hidden",
+      marginBottom: "12px",
+      backgroundColor: "#f0f0f0",
+      cursor: "pointer",
+      transition: "opacity 0.2s"
+    }}
+    className="hover:opacity-90"
+  >
+    <img 
+      src={mealData.image} 
+      alt={mealData.nama} 
+      style={{
+        width: "100%",
+        height: "100%",
+        objectFit: "cover"
+      }}
+    />
+  </div>
+)}
                   <div className="meal-name">{mealData.nama}</div>
                   <div className="meal-desc">{mealData.deskripsi}</div>
                   <div className="meal-meta">
@@ -126,6 +134,74 @@ export function PlannerScreen({ profile }: { profile: Profile }) {
         <button className="btn-regen" onClick={() => loadDay(activeDay)}>
           Generate Ulang Hari Ini
         </button>
+      )}
+      {selectedMeal && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 999,
+          padding: "20px"
+        }}
+        onClick={() => setSelectedMeal(null)} 
+        >
+          <div style={{
+            background: "white",
+            padding: "24px",
+            borderRadius: "16px",
+            maxWidth: "450px",
+            width: "100%",
+            boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+            position: "relative",
+            animation: "fadeIn 0.2s ease-out"
+          }}
+          onClick={(e) => e.stopPropagation()} 
+          >
+            <button 
+              onClick={() => setSelectedMeal(null)}
+              style={{
+                position: "absolute",
+                top: "16px",
+                right: "16px",
+                background: "none",
+                border: "none",
+                fontSize: "18px",
+                cursor: "pointer",
+                color: "#666"
+              }}
+            >
+              ✕
+            </button>
+
+            {/* Konten img */}
+            <img 
+              src={selectedMeal.image} 
+              alt={selectedMeal.nama} 
+              style={{ width: "100%", height: "200px", objectFit: "cover", borderRadius: "12px", marginBottom: "16px" }} 
+            />
+
+            {/* Info Menu */}
+            <h2 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "8px", color: "#333" }}>
+              {selectedMeal.nama}
+            </h2>
+            
+            <p style={{ fontSize: "14px", color: "#666", lineHeight: "1.5", marginBottom: "16px" }}>
+              {selectedMeal.deskripsi}
+            </p>
+
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <span className="meal-pill meal-pill-green">Clean</span>
+              <span className="meal-pill">{selectedMeal.kalori}</span>
+              <span className="meal-pill">{selectedMeal.estimasi_harga}</span>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
