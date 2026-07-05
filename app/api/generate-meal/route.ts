@@ -63,7 +63,6 @@ export async function POST(req: NextRequest) {
   const mealListText = keys.map((k) => k.replace("_", " ")).join(", ");
 
   const prompt =
-  // Tambahkan baris ini di dalam string prompt kamu:
 "\n- Catatan: Pada field 'nama_en', tuliskan terjemahan nama menu tersebut dalam bahasa Inggris yang sederhana dan umum agar mudah dicari di API internasional (contoh: 'Oatmeal with fruits', 'Grilled catfish', 'Chicken broccoli')." +
     "Kamu adalah ahli gizi. Buat meal plan SEHAT dan CLEAN EATING untuk hari " +
     DAYS[day] +
@@ -104,10 +103,7 @@ export async function POST(req: NextRequest) {
   const raw = data.choices?.[0]?.message?.content ?? "{}";
 
   try {
-    // 1. Parse hasil generate dari Groq Llama
     const parsedMealPlan = JSON.parse(raw.replace(/```json/g, "").replace(/```/g, "").trim());
-    
-    // 2. Ambil Spoonacular API Key dari .env.local kamu
     const unsplashAccessKey = process.env.UNSPLASH_ACCESS_KEY;
 
 if (unsplashAccessKey) {
@@ -117,8 +113,7 @@ if (unsplashAccessKey) {
       
       if (menuNameEn) {
         try {
-          // Cari foto makanan estetik di Unsplash berdasarkan nama Inggris dari Groq
-          const unsplashUrl = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(menuNameEn + " food")}&per_page=1&client_id=${unsplashAccessKey}`;
+           const unsplashUrl = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(menuNameEn + " food")}&per_page=1&client_id=${unsplashAccessKey}`;
           const unsplashRes = await fetch(unsplashUrl);
           const unsplashData = await unsplashRes.json();
 
@@ -135,41 +130,7 @@ if (unsplashAccessKey) {
       }
     })
   );
-}
-    // const spoonacularApiKey = process.env.SPOONACULAR_API_KEY;
-
-    // // Jika API Key Spoonacular ada, kita perkaya datanya dengan foto dari Spoonacular
-    // if (spoonacularApiKey) {
-    //   // Loop setiap waktu makan (sarapan, siang, malam, dll) secara paralel
-    //   await Promise.all(
-    //     Object.keys(parsedMealPlan).map(async (waktuMakan) => {
-    //       const menuNameEn = parsedMealPlan[waktuMakan].nama_en;
-          
-    //       if (menuNameEn) {
-    //         try {
-    //           // Cari resep di Spoonacular berdasarkan nama menu dari Groq
-    //           const spoonUrl = `https://api.spoonacular.com/recipes/complexSearch?query=${encodeURIComponent(menuNameEn)}&number=1&apiKey=${spoonacularApiKey}`;
-    //           const spoonRes = await fetch(spoonUrl);
-    //           const spoonData = await spoonRes.json();
-
-    //           // Jika resep ketemu, pasang gambar dan ID resepnya ke dalam object JSON kita
-    //           if (spoonData.results && spoonData.results.length > 0) {
-    //             parsedMealPlan[waktuMakan].image = spoonData.results[0].image;
-    //             parsedMealPlan[waktuMakan].recipeId = spoonData.results[0].id; // Berguna jika nanti klik menu, mau lihat instruksi masaknya
-    //           } else {
-    //             parsedMealPlan[waktuMakan].image = null;
-    //           }
-    //         } catch (err) {
-    //           console.error(`Gagal fetch gambar Spoonacular untuk ${menuNameEn}:`, err);
-    //           parsedMealPlan[waktuMakan].image = null;
-    //         }
-    //       }
-    //     })
-    //   );
-    // }
-
-    // 3. Kembalikan data yang sudah lengkap dengan gambar ke frontend
-    return NextResponse.json(parsedMealPlan);
+}return NextResponse.json(parsedMealPlan);
 
   } catch (error) {
     console.error("Error parsing atau memperkaya data dengan Spoonacular:", error);
